@@ -12,7 +12,7 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: 'https',
-        hostname: 'api_citylibrary.denyslab.com',
+        hostname: 'api-citylibrary.denyslab.com',
         pathname: '/media/**',
       },
     ],
