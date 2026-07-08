@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch';
 import { addToCart } from '@/store/cartSlice';
 import { StarRating } from '@/components/ui/StarRating';
@@ -16,6 +17,7 @@ interface BookCardProps {
 
 export function BookCard({ book }: BookCardProps) {
   const dispatch = useAppDispatch();
+  const router = useRouter();
   const { user } = useAppSelector((s) => s.auth);
   const { cart } = useAppSelector((s) => s.cart);
   const [adding, setAdding] = useState(false);
@@ -23,7 +25,11 @@ export function BookCard({ book }: BookCardProps) {
   const inCart = cart?.items.some((i) => i.book === book.id) ?? false;
 
   const handleAddToCart = async () => {
-    if (!user || user.role !== 'user') return;
+    if (!user) {
+      router.push('/login');
+      return;
+    }
+    if (user.role !== 'user') return;
     setAdding(true);
     try {
       await dispatch(addToCart(book.id));
@@ -73,7 +79,7 @@ export function BookCard({ book }: BookCardProps) {
         <StarRating value={Math.round(book.average_rating)} readonly size="sm" />
 
         <div className="flex gap-2 mt-1">
-          {user?.role === 'user' && (
+          {user?.role !== 'librarian' && user?.role !== 'admin' && (
             <Button
               size="sm"
               variant={inCart ? 'secondary' : 'primary'}

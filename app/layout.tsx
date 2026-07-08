@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { StoreProvider } from '@/store/provider';
 import { AppInitializer } from '@/components/layout/AppInitializer';
+import { ScrollToTop } from '@/components/layout/ScrollToTop';
 
 const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
@@ -17,6 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-full flex flex-col bg-slate-50">
         <StoreProvider>
           <AppInitializer />
+          <ScrollToTop />
           {children}
         </StoreProvider>
       </body>
