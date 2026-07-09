@@ -5,7 +5,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch';
-import { fetchCart, removeFromCart, bookAll } from '@/store/cartSlice';
+import { fetchCart, removeFromCart, bookAll, removeItemLocally } from '@/store/cartSlice';
 import { api } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { PageSpinner } from '@/components/ui/Spinner';
@@ -33,6 +33,7 @@ export default function CartPage() {
     setItemErrors((prev) => { const next = { ...prev }; delete next[item.book]; return next; });
     try {
       await api.post('/bookings/', { book: item.book });
+      dispatch(removeItemLocally(item.book));
       dispatch(removeFromCart(item.book));
     } catch (err) {
       setItemErrors((prev) => ({ ...prev, [item.book]: err instanceof Error ? err.message : 'Failed to book' }));

@@ -35,6 +35,11 @@ const cartSlice = createSlice({
     clearCart(state) {
       state.cart = null;
     },
+    removeItemLocally(state, action) {
+      if (!state.cart) return;
+      state.cart.items = state.cart.items.filter((i) => i.book !== action.payload);
+      state.cart.item_count = state.cart.items.length;
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -47,10 +52,10 @@ const cartSlice = createSlice({
       .addCase(addToCart.fulfilled, (state, action) => { state.cart = action.payload; })
       .addCase(removeFromCart.fulfilled, (state, action) => { state.cart = action.payload; })
       .addCase(bookAll.fulfilled, (state) => {
-        if (state.cart) state.cart.items = [];
+        if (state.cart) { state.cart.items = []; state.cart.item_count = 0; }
       });
   },
 });
 
-export const { clearCart } = cartSlice.actions;
+export const { clearCart, removeItemLocally } = cartSlice.actions;
 export default cartSlice.reducer;
