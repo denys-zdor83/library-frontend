@@ -12,6 +12,7 @@ import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { SkeletonCards } from '@/components/ui/SkeletonCard';
 import { useDebounce } from '@/hooks/useDebounce';
+import { canAddBooks, canEditBooks, canDeleteBooks } from '@/lib/permissions';
 import type { Book, PaginatedResponse } from '@/types';
 
 const defaultFilters: BookFilters = {
@@ -26,7 +27,9 @@ const defaultFilters: BookFilters = {
 function BooksContent() {
   const searchParams = useSearchParams();
   const { user } = useAppSelector((s) => s.auth);
-  const canManageBooks = user?.role === 'admin' || user?.role === 'librarian';
+  const userCanAdd = canAddBooks(user);
+  const userCanEdit = canEditBooks(user);
+  const userCanDelete = canDeleteBooks(user);
   const [addModalOpen, setAddModalOpen] = useState(false);
   const [filters, setFilters] = useState<BookFilters>({
     ...defaultFilters,
@@ -95,7 +98,7 @@ function BooksContent() {
             ) : (
               <span />
             )}
-            {canManageBooks && (
+            {userCanAdd && (
               <Button size="sm" onClick={() => setAddModalOpen(true)}>
                 <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -120,7 +123,22 @@ function BooksContent() {
             <>
               <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4 lg:gap-6">
                 {data?.results.map((book) => (
-                  <BookCard key={book.id} book={book} />
+                  <BookCard
+                    key={book.id}
+                    book={book}
+                    canEdit={userCanEdit}
+                    canDelete={userCanDelete}
+                    onEdited={(updated) =>
+                      setData((prev) => prev
+                        ? { ...prev, results: prev.results.map((b) => b.id === updated.id ? updated : b) }
+                        : prev)
+                    }
+                    onDeleted={(id) =>
+                      setData((prev) => prev
+                        ? { ...prev, results: prev.results.filter((b) => b.id !== id), count: prev.count - 1 }
+                        : prev)
+                    }
+                  />
                 ))}
               </div>
               {data && (
@@ -137,7 +155,7 @@ function BooksContent() {
       <AddBookModal
         open={addModalOpen}
         onClose={() => setAddModalOpen(false)}
-        onAdded={() => { setAddModalOpen(false); fetchBooks(); }}
+        onSaved={() => { setAddModalOpen(false); fetchBooks(); }}
       />
     </div>
   );

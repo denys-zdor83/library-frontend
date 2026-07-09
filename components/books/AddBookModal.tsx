@@ -12,7 +12,8 @@ import type { Book, Genre } from '@/types';
 interface AddBookModalProps {
   open: boolean;
   onClose: () => void;
-  onAdded: (book: Book) => void;
+  onSaved: (book: Book) => void;
+  book?: Book; // when provided → edit mode
 }
 
 interface FormErrors {
@@ -24,7 +25,9 @@ interface FormErrors {
 
 const currentYear = new Date().getFullYear();
 
-export function AddBookModal({ open, onClose, onAdded }: AddBookModalProps) {
+export function AddBookModal({ open, onClose, onSaved, book: editBook }: AddBookModalProps) {
+  const isEdit = !!editBook;
+
   const [genres, setGenres] = useState<Genre[]>([]);
   const [form, setForm] = useState({ title: '', author: '', year: '', genre: '', description: '' });
   const [cover, setCover] = useState<File | null>(null);
@@ -38,15 +41,27 @@ export function AddBookModal({ open, onClose, onAdded }: AddBookModalProps) {
     api.get<Genre[]>('/books/genres/').then(setGenres).catch(() => {});
   }, []);
 
+  // Populate or reset form whenever the modal opens
   useEffect(() => {
-    if (!open) {
+    if (!open) return;
+    if (editBook) {
+      setForm({
+        title: editBook.title,
+        author: editBook.author,
+        year: editBook.year.toString(),
+        genre: editBook.genre.toString(),
+        description: editBook.description ?? '',
+      });
+      setCoverPreview(editBook.cover_url ?? null);
+    } else {
       setForm({ title: '', author: '', year: '', genre: '', description: '' });
-      setCover(null);
       setCoverPreview(null);
-      setErrors({});
-      setSubmitError('');
     }
-  }, [open]);
+    setCover(null);
+    setErrors({});
+    setSubmitError('');
+    if (fileRef.current) fileRef.current.value = '';
+  }, [open, editBook]);
 
   const handleCover = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -88,18 +103,22 @@ export function AddBookModal({ open, onClose, onAdded }: AddBookModalProps) {
       fd.append('genre', form.genre);
       fd.append('description', form.description.trim());
       if (cover) fd.append('cover', cover);
-      const book = await api.post<Book>('/books/', fd);
-      onAdded(book);
+
+      const result = isEdit
+        ? await api.patch<Book>(`/books/${editBook!.id}/`, fd)
+        : await api.post<Book>('/books/', fd);
+
+      onSaved(result);
       onClose();
     } catch (err) {
-      setSubmitError(err instanceof Error ? err.message : 'Failed to add book');
+      setSubmitError(err instanceof Error ? err.message : `Failed to ${isEdit ? 'update' : 'add'} book`);
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Modal open={open} onClose={onClose} title="Add Book" size="lg">
+    <Modal open={open} onClose={onClose} title={isEdit ? 'Edit Book' : 'Add Book'} size="lg">
       <form onSubmit={handleSubmit} className="space-y-4">
         {submitError && (
           <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-sm text-red-700">
@@ -187,9 +206,9 @@ export function AddBookModal({ open, onClose, onAdded }: AddBookModalProps) {
             )}
             <div className="flex flex-col gap-2 pt-1">
               <Button type="button" variant="outline" size="sm" onClick={() => fileRef.current?.click()}>
-                {cover ? 'Change image' : 'Choose image'}
+                {cover ? 'Change image' : coverPreview ? 'Replace image' : 'Choose image'}
               </Button>
-              {cover && (
+              {coverPreview && (
                 <button
                   type="button"
                   onClick={removeCover}
@@ -205,7 +224,9 @@ export function AddBookModal({ open, onClose, onAdded }: AddBookModalProps) {
         </div>
 
         <div className="flex gap-2 pt-2 border-t border-slate-100">
-          <Button type="submit" loading={loading} fullWidth>Add Book</Button>
+          <Button type="submit" loading={loading} fullWidth>
+            {isEdit ? 'Save Changes' : 'Add Book'}
+          </Button>
           <Button type="button" variant="ghost" onClick={onClose} fullWidth>Cancel</Button>
         </div>
       </form>

@@ -16,6 +16,7 @@ export interface User {
   bio: string;
   registered_at: string;
   favorite_genres: FavoriteGenre[];
+  permissions: string[];
 }
 
 export interface FavoriteGenre {

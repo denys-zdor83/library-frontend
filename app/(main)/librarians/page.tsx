@@ -57,13 +57,9 @@ export default function LibrariansPage() {
     if (!permModal) return;
     setSavingPerms(true);
     try {
-      await api.patch(`/auth/librarians/${permModal.id}/`, { permissions });
+      const updated = await api.patch<LibrarianUser>(`/auth/librarians/${permModal.id}/`, { permissions });
       setLibrarians((prev) =>
-        prev.map((l) =>
-          l.id === permModal.id
-            ? { ...l, librarian_profile: { ...l.librarian_profile!, permissions } }
-            : l
-        )
+        prev.map((l) => l.id === permModal.id ? updated : l)
       );
       setPermModal(null);
     } catch {}
