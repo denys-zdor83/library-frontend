@@ -8,19 +8,29 @@ import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch';
 import { addToCart } from '@/store/cartSlice';
 import { StarRating } from '@/components/ui/StarRating';
 import { Button } from '@/components/ui/Button';
+import { Modal } from '@/components/ui/Modal';
+import { AddBookModal } from '@/components/books/AddBookModal';
+import { api } from '@/lib/api';
 import { clsx, statusLabel, statusColor } from '@/lib/utils';
 import type { Book } from '@/types';
 
 interface BookCardProps {
   book: Book;
+  canEdit?: boolean;
+  canDelete?: boolean;
+  onEdited?: (updated: Book) => void;
+  onDeleted?: (id: number) => void;
 }
 
-export function BookCard({ book }: BookCardProps) {
+export function BookCard({ book, canEdit, canDelete, onEdited, onDeleted }: BookCardProps) {
   const dispatch = useAppDispatch();
   const router = useRouter();
   const { user } = useAppSelector((s) => s.auth);
   const { cart } = useAppSelector((s) => s.cart);
   const [adding, setAdding] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
+  const [deleteOpen, setDeleteOpen] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const inCart = cart?.items.some((i) => i.book === book.id) ?? false;
 
@@ -36,6 +46,16 @@ export function BookCard({ book }: BookCardProps) {
     } finally {
       setAdding(false);
     }
+  };
+
+  const handleDelete = async () => {
+    setDeleting(true);
+    try {
+      await api.delete(`/books/${book.id}/`);
+      setDeleteOpen(false);
+      onDeleted?.(book.id);
+    } catch {}
+    setDeleting(false);
   };
 
   return (
@@ -97,7 +117,53 @@ export function BookCard({ book }: BookCardProps) {
             </Button>
           </Link>
         </div>
+
+        {(canEdit || canDelete) && (
+          <div className="flex gap-1.5">
+            {canEdit && (
+              <button
+                onClick={() => setEditOpen(true)}
+                className="flex-1 text-xs py-1.5 rounded-lg text-blue-600 hover:bg-blue-50 transition-colors font-medium"
+              >
+                Edit
+              </button>
+            )}
+            {canDelete && (
+              <button
+                onClick={() => setDeleteOpen(true)}
+                className="flex-1 text-xs py-1.5 rounded-lg text-red-500 hover:bg-red-50 transition-colors font-medium"
+              >
+                Delete
+              </button>
+            )}
+          </div>
+        )}
       </div>
+
+      {/* Edit modal */}
+      <AddBookModal
+        open={editOpen}
+        onClose={() => setEditOpen(false)}
+        onSaved={(updated) => { setEditOpen(false); onEdited?.(updated); }}
+        book={book}
+      />
+
+      {/* Delete confirmation modal */}
+      <Modal open={deleteOpen} onClose={() => setDeleteOpen(false)} title="Delete Book">
+        <p className="text-slate-600 text-sm mb-1">
+          Are you sure you want to delete
+        </p>
+        <p className="font-semibold text-slate-900 mb-5">"{book.title}"?</p>
+        <p className="text-xs text-slate-400 mb-6">This action cannot be undone.</p>
+        <div className="flex gap-2">
+          <Button variant="danger" onClick={handleDelete} loading={deleting} fullWidth>
+            Yes, Delete
+          </Button>
+          <Button variant="ghost" onClick={() => setDeleteOpen(false)} fullWidth>
+            Cancel
+          </Button>
+        </div>
+      </Modal>
     </div>
   );
 }
