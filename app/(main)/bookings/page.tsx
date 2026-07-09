@@ -8,6 +8,7 @@ import { api } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { PageSpinner } from '@/components/ui/Spinner';
 import { clsx, statusLabel, statusColor, formatDateTime } from '@/lib/utils';
+import { canViewBookings } from '@/lib/permissions';
 import type { Booking, User } from '@/types';
 
 export default function BookingsPage() {
@@ -26,6 +27,10 @@ export default function BookingsPage() {
 
   useEffect(() => {
     if (initialized && !user) { router.push('/login'); return; }
+    if (initialized && user?.role === 'librarian' && !canViewBookings(user)) {
+      router.push('/');
+      return;
+    }
     if (!user) return;
 
     async function load() {

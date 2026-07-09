@@ -10,3 +10,4 @@ function hasPermission(user: User | null, perm: string): boolean {
 export const canAddBooks = (user: User | null) => hasPermission(user, 'add_books');
 export const canEditBooks = (user: User | null) => hasPermission(user, 'edit_books');
 export const canDeleteBooks = (user: User | null) => hasPermission(user, 'delete_books');
+export const canViewBookings = (user: User | null) => hasPermission(user, 'view_bookings');

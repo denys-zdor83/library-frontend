@@ -29,6 +29,8 @@ export default function LibrariansPage() {
   const [addForm, setAddForm] = useState({ email: '', first_name: '', last_name: '', password: '', password2: '' });
   const [addLoading, setAddLoading] = useState(false);
   const [addError, setAddError] = useState('');
+  const [deleteModal, setDeleteModal] = useState<LibrarianUser | null>(null);
+  const [deleteLoading, setDeleteLoading] = useState(false);
 
   useEffect(() => {
     if (initialized && (!user || user.role !== 'admin')) {
@@ -66,12 +68,15 @@ export default function LibrariansPage() {
     setSavingPerms(false);
   };
 
-  const deleteLibrarian = async (id: number) => {
-    if (!confirm('Are you sure you want to remove this librarian?')) return;
+  const confirmDelete = async () => {
+    if (!deleteModal) return;
+    setDeleteLoading(true);
     try {
-      await api.delete(`/auth/librarians/${id}/`);
-      setLibrarians((prev) => prev.filter((l) => l.id !== id));
+      await api.delete(`/auth/librarians/${deleteModal.id}/`);
+      setLibrarians((prev) => prev.filter((l) => l.id !== deleteModal.id));
+      setDeleteModal(null);
     } catch {}
+    setDeleteLoading(false);
   };
 
   const handleAddLibrarian = async (e: React.FormEvent) => {
@@ -138,7 +143,7 @@ export default function LibrariansPage() {
                 <Button size="sm" variant="outline" onClick={() => openPermModal(lib)}>
                   Permissions
                 </Button>
-                <Button size="sm" variant="danger" onClick={() => deleteLibrarian(lib.id)}>
+                <Button size="sm" variant="danger" onClick={() => setDeleteModal(lib)}>
                   Delete
                 </Button>
               </div>
@@ -174,6 +179,21 @@ export default function LibrariansPage() {
         <div className="flex gap-2 mt-6 pt-4 border-t border-slate-100">
           <Button onClick={savePermissions} loading={savingPerms} fullWidth>Save Permissions</Button>
           <Button variant="ghost" onClick={() => setPermModal(null)} fullWidth>Cancel</Button>
+        </div>
+      </Modal>
+
+      {/* Delete Librarian Modal */}
+      <Modal open={!!deleteModal} onClose={() => setDeleteModal(null)} title="Delete Librarian">
+        <p className="text-slate-600 text-sm mb-1">Are you sure you want to delete</p>
+        <p className="font-semibold text-slate-900 mb-5">"{deleteModal?.full_name}"?</p>
+        <p className="text-xs text-slate-400 mb-6">This action cannot be undone. The librarian will lose access to the system.</p>
+        <div className="flex gap-2">
+          <Button variant="danger" onClick={confirmDelete} loading={deleteLoading} fullWidth>
+            Yes, Delete
+          </Button>
+          <Button variant="ghost" onClick={() => setDeleteModal(null)} fullWidth>
+            Cancel
+          </Button>
         </div>
       </Modal>
 
