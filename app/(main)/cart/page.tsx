@@ -6,8 +6,10 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAppDispatch, useAppSelector } from '@/hooks/useAppDispatch';
 import { fetchCart, removeFromCart, bookAll } from '@/store/cartSlice';
+import { api } from '@/lib/api';
 import { Button } from '@/components/ui/Button';
 import { PageSpinner } from '@/components/ui/Spinner';
+import type { CartItem } from '@/types';
 
 export default function CartPage() {
   const dispatch = useAppDispatch();
@@ -16,6 +18,8 @@ export default function CartPage() {
   const { cart, loading } = useAppSelector((s) => s.cart);
   const [bookingAll, setBookingAll] = useState(false);
   const [result, setResult] = useState<{ booked: string[]; errors: { book: string; error: string }[] } | null>(null);
+  const [bookingItems, setBookingItems] = useState<Record<number, boolean>>({});
+  const [itemErrors, setItemErrors] = useState<Record<number, string>>({});
 
   useEffect(() => {
     if (!user) { router.push('/login'); return; }
@@ -23,6 +27,19 @@ export default function CartPage() {
   }, [user, dispatch, router]);
 
   const handleRemove = (bookId: number) => dispatch(removeFromCart(bookId));
+
+  const handleBookOne = async (item: CartItem) => {
+    setBookingItems((prev) => ({ ...prev, [item.book]: true }));
+    setItemErrors((prev) => { const next = { ...prev }; delete next[item.book]; return next; });
+    try {
+      await api.post('/bookings/', { book: item.book });
+      dispatch(removeFromCart(item.book));
+    } catch (err) {
+      setItemErrors((prev) => ({ ...prev, [item.book]: err instanceof Error ? err.message : 'Failed to book' }));
+    } finally {
+      setBookingItems((prev) => { const next = { ...prev }; delete next[item.book]; return next; });
+    }
+  };
 
   const handleBookAll = async () => {
     setBookingAll(true);
@@ -95,12 +112,23 @@ export default function CartPage() {
                   <h3 className="font-semibold text-slate-900 truncate">{item.book_detail.title}</h3>
                   <p className="text-sm text-slate-500">{item.book_detail.author} · {item.book_detail.year}</p>
                   <p className="text-xs text-slate-400 mt-1">Status: {item.book_detail.status}</p>
+                  {itemErrors[item.book] && (
+                    <p className="text-xs text-red-500 mt-1">{itemErrors[item.book]}</p>
+                  )}
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0">
                   <Link href={`/books/${item.book}`}>
                     <Button size="sm" variant="outline">Details</Button>
                   </Link>
+                  <Button
+                    size="sm"
+                    variant="primary"
+                    onClick={() => handleBookOne(item)}
+                    loading={bookingItems[item.book]}
+                  >
+                    To Book
+                  </Button>
                   <Button
                     size="sm"
                     variant="ghost"
