@@ -3,9 +3,12 @@
 import { useEffect, useState, useCallback, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { api } from '@/lib/api';
+import { useAppSelector } from '@/hooks/useAppDispatch';
 import { BookCard } from '@/components/books/BookCard';
+import { AddBookModal } from '@/components/books/AddBookModal';
 import { Sidebar, type BookFilters } from '@/components/layout/Sidebar';
 import { Input } from '@/components/ui/Input';
+import { Button } from '@/components/ui/Button';
 import { Pagination } from '@/components/ui/Pagination';
 import { SkeletonCards } from '@/components/ui/SkeletonCard';
 import { useDebounce } from '@/hooks/useDebounce';
@@ -22,6 +25,9 @@ const defaultFilters: BookFilters = {
 
 function BooksContent() {
   const searchParams = useSearchParams();
+  const { user } = useAppSelector((s) => s.auth);
+  const canManageBooks = user?.role === 'admin' || user?.role === 'librarian';
+  const [addModalOpen, setAddModalOpen] = useState(false);
   const [filters, setFilters] = useState<BookFilters>({
     ...defaultFilters,
     sort: searchParams.get('sort') ?? 'newest',
@@ -81,13 +87,23 @@ function BooksContent() {
           </div>
 
           {/* Results header */}
-          {data && (
-            <div className="flex items-center justify-between mb-5">
+          <div className="flex items-center justify-between mb-5">
+            {data ? (
               <p className="text-sm text-slate-500">
                 {data.count} book{data.count !== 1 ? 's' : ''} found
               </p>
-            </div>
-          )}
+            ) : (
+              <span />
+            )}
+            {canManageBooks && (
+              <Button size="sm" onClick={() => setAddModalOpen(true)}>
+                <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+                </svg>
+                Add a book
+              </Button>
+            )}
+          </div>
 
           {/* Books grid */}
           {loading ? (
@@ -118,6 +134,11 @@ function BooksContent() {
           )}
         </div>
       </div>
+      <AddBookModal
+        open={addModalOpen}
+        onClose={() => setAddModalOpen(false)}
+        onAdded={() => { setAddModalOpen(false); fetchBooks(); }}
+      />
     </div>
   );
 }
