@@ -17,6 +17,18 @@ export default function AboutProjectPage() {
 
       <div className="space-y-8">
 
+        {/* ── Video ────────────────────────────────────────────────────── */}
+        <div className="bg-white rounded-2xl border border-slate-100 shadow-sm p-6">
+          <div style={{ position: 'relative', paddingBottom: '62.5%', height: 0 }}>
+            <iframe
+              src="https://www.loom.com/embed/d3b65805938948b2adbedbb264c82df8"
+              frameBorder="0"
+              allowFullScreen
+              style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%' }}
+            />
+          </div>
+        </div>
+
         {/* ── Section 1: General Information ───────────────────────────── */}
         <section className="bg-white rounded-2xl border border-slate-100 shadow-sm p-8">
           <div className="flex items-center gap-3 mb-6">
